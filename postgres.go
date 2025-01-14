@@ -87,7 +87,7 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	conn, err := pgx.Connect(ctx, env.PostgresURI)
 	Must(t, err, "open postgres user connection")
 
-	conn.Ping(ctx)
+	err = conn.Ping(ctx)
 	Must(t, err, "ping postgres user connection")
 
 	defer conn.Close(ctx)
