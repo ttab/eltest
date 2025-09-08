@@ -27,8 +27,8 @@ type Postgres struct {
 
 func (pg *Postgres) getPostgresURI(user, database string) string {
 	return fmt.Sprintf(
-		"postgres://%[1]s:%[1]s@localhost:%[3]s/%[2]s",
-		user, database, pg.res.GetPort("5432/tcp"))
+		"postgres://%[1]s:%[1]s@%[3]s:5432/%[2]s",
+		user, database, pg.res.Container.NetworkSettings.IPAddress)
 }
 
 type PGEnvironment struct {

@@ -29,7 +29,8 @@ const (
 )
 
 func (m *Minio) getS3Endpoint() string {
-	return fmt.Sprintf("localhost:%s", m.res.GetPort("9000/tcp"))
+	return fmt.Sprintf("%s:9000",
+		m.res.Container.NetworkSettings.IPAddress)
 }
 
 type MinioEnvironment struct {
