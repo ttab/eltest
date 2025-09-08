@@ -23,12 +23,13 @@ func NewPostgres(t T) *Postgres {
 
 type Postgres struct {
 	res *dockertest.Resource
+	ip  string
 }
 
 func (pg *Postgres) getPostgresURI(user, database string) string {
 	return fmt.Sprintf(
 		"postgres://%[1]s:%[1]s@%[3]s:5432/%[2]s",
-		user, database, pg.res.Container.NetworkSettings.IPAddress)
+		user, database, pg.ip)
 }
 
 type PGEnvironment struct {
@@ -105,7 +106,7 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	return env
 }
 
-func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
+func (pg *Postgres) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "postgres",
 		Tag:        "15.2",
@@ -116,6 +117,7 @@ func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
 		Cmd: []string{
 			"-c", "wal_level=logical",
 		},
+		NetworkID: network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true
 	})
@@ -124,6 +126,7 @@ func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
 	}
 
 	pg.res = res
+	pg.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.

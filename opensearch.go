@@ -21,14 +21,14 @@ func NewOpenSearch(t T, tag string) *OpenSearch {
 type OpenSearch struct {
 	res *dockertest.Resource
 	tag string
+	ip  string
 }
 
 func (m *OpenSearch) GetEndpoint() string {
-	return fmt.Sprintf("http://%s:9200",
-		m.res.Container.NetworkSettings.IPAddress)
+	return fmt.Sprintf("http://%s:9200", m.ip)
 }
 
-func (m *OpenSearch) SetUp(pool *dockertest.Pool) error {
+func (m *OpenSearch) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "opensearchproject/opensearch",
 		Tag:        m.tag,
@@ -38,6 +38,7 @@ func (m *OpenSearch) SetUp(pool *dockertest.Pool) error {
 			"DISABLE_INSTALL_DEMO_CONFIG=true",
 			"DISABLE_SECURITY_PLUGIN=true",
 		},
+		NetworkID: network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true
 	})
@@ -46,6 +47,7 @@ func (m *OpenSearch) SetUp(pool *dockertest.Pool) error {
 	}
 
 	m.res = res
+	m.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.

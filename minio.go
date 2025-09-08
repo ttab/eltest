@@ -21,6 +21,7 @@ func NewMinio(t T) *Minio {
 
 type Minio struct {
 	res *dockertest.Resource
+	ip  string
 }
 
 const (
@@ -29,8 +30,7 @@ const (
 )
 
 func (m *Minio) getS3Endpoint() string {
-	return fmt.Sprintf("%s:9000",
-		m.res.Container.NetworkSettings.IPAddress)
+	return fmt.Sprintf("%s:9000", m.ip)
 }
 
 type MinioEnvironment struct {
@@ -79,11 +79,12 @@ func (m *Minio) CreateBucket(t T, ctx context.Context, prefix string) string {
 	return bucketName
 }
 
-func (m *Minio) SetUp(pool *dockertest.Pool) error {
+func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "minio/minio",
 		Tag:        "RELEASE.2023-02-22T18-23-45Z",
 		Cmd:        []string{"server", "/data"},
+		NetworkID:  network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true
 	})
@@ -92,6 +93,7 @@ func (m *Minio) SetUp(pool *dockertest.Pool) error {
 	}
 
 	m.res = res
+	m.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.
@@ -103,7 +105,7 @@ func (m *Minio) SetUp(pool *dockertest.Pool) error {
 	}
 
 	err = pool.Retry(func() error {
-		_, err := client.ListBuckets(context.Background())
+		_, err = client.ListBuckets(context.Background())
 		if err != nil {
 			log.Println(err.Error())
 
