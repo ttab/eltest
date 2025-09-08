@@ -68,7 +68,10 @@ func (pg *Postgres) Database(
 		pg.getPostgresURI(pgAdminUser, pgAdminUser))
 	Must(t, err, "open postgres admin connection")
 
-	defer adminConn.Close(ctx)
+	defer func() {
+		err := adminConn.Close(ctx)
+		Must(t, err, "close admin connection")
+	}()
 
 	sane := strings.ToLower(sanitizeExp.ReplaceAllString(
 		t.Name()+"_"+name, "_"),
@@ -94,7 +97,10 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	err = conn.Ping(ctx)
 	Must(t, err, "ping postgres user connection")
 
-	defer conn.Close(ctx)
+	defer func() {
+		err := conn.Close(ctx)
+		Must(t, err, "close user connection")
+	}()
 
 	if runMigrations {
 		m := env.Migrator(t, ctx, conn)
