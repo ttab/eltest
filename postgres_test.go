@@ -21,7 +21,7 @@ func TestPostgres(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		t.Cleanup(cancel)
 
-		pgEnv := pg.Database(t, migrationFS, true)
+		pgEnv := pg.Database(t, "example", migrationFS, true)
 
 		conn, err := pgx.Connect(ctx, pgEnv.PostgresURI)
 		eltest.Must(t, err, "connect to database")
@@ -47,7 +47,7 @@ func TestPostgres(t *testing.T) {
 		ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 		t.Cleanup(cancel)
 
-		pgEnv := pg.Database(t, migrationFS, false)
+		pgEnv := pg.Database(t, "example", migrationFS, false)
 
 		conn, err := pgx.Connect(ctx, pgEnv.PostgresURI)
 		eltest.Must(t, err, "connect to database")
@@ -88,7 +88,7 @@ func TestPostgresConcurrent(t *testing.T) {
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			t.Cleanup(cancel)
 
-			pgEnv := pg.Database(t, migrationFS, true)
+			pgEnv := pg.Database(t, "example", migrationFS, true)
 
 			conn, err := pgx.Connect(ctx, pgEnv.PostgresURI)
 			eltest.Must(t, err, "connect to database")

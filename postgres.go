@@ -55,6 +55,7 @@ const pgAdminUser = "eltest"
 
 func (pg *Postgres) Database(
 	t T,
+	name string,
 	migrations fs.FS,
 	runMigrations bool,
 ) PGEnvironment {
@@ -68,7 +69,9 @@ func (pg *Postgres) Database(
 
 	defer adminConn.Close(ctx)
 
-	sane := strings.ToLower(sanitizeExp.ReplaceAllString(t.Name(), "_"))
+	sane := strings.ToLower(sanitizeExp.ReplaceAllString(
+		t.Name()+"_"+name, "_"),
+	)
 
 	_, err = adminConn.Exec(ctx, fmt.Sprintf(`
 CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
