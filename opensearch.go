@@ -15,7 +15,7 @@ func NewOpenSearch(t T, tag string) *OpenSearch {
 	os, err := Bootstrap("opensearch-"+tag, &OpenSearch{
 		tag: tag,
 	})
-	Must(t, err, "bootstrap opensearch "+tag)
+	Must(t, err, "bootstrap opensearch %s", tag)
 
 	return os
 }

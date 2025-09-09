@@ -19,7 +19,7 @@ const (
 
 func NewMinio(t T, tag string) *Minio {
 	m, err := Bootstrap("minio-"+tag, &Minio{})
-	Must(t, err, "bootstrap minio")
+	Must(t, err, "bootstrap minio %s", tag)
 
 	return m
 }

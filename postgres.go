@@ -23,7 +23,7 @@ func NewPostgres(t T, tag string) *Postgres {
 	pg, err := Bootstrap("postgres-"+tag, &Postgres{
 		tag: tag,
 	})
-	Must(t, err, "bootstrap postgres")
+	Must(t, err, "bootstrap postgres %s", tag)
 
 	return pg
 }
