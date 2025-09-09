@@ -12,7 +12,7 @@ import (
 )
 
 func TestMinio(t *testing.T) {
-	minioSvc := eltest.NewMinio(t)
+	minioSvc := eltest.NewMinio(t, eltest.Minio202509)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	t.Cleanup(cancel)

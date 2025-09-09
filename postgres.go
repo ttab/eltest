@@ -14,21 +14,30 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-func NewPostgres(t T) *Postgres {
-	pg, err := Bootstrap("postgres", &Postgres{})
-	Must(t, err, "bootstrap postgres")
+const (
+	Postgres15_2 = "15.2"
+	Postgres17_6 = "17.6-alpine3.22"
+)
+
+func NewPostgres(t T, tag string) *Postgres {
+	pg, err := Bootstrap("postgres-"+tag, &Postgres{
+		tag: tag,
+	})
+	Must(t, err, "bootstrap postgres %s", tag)
 
 	return pg
 }
 
 type Postgres struct {
+	tag string
 	res *dockertest.Resource
+	ip  string
 }
 
 func (pg *Postgres) getPostgresURI(user, database string) string {
 	return fmt.Sprintf(
-		"postgres://%[1]s:%[1]s@localhost:%[3]s/%[2]s",
-		user, database, pg.res.GetPort("5432/tcp"))
+		"postgres://%[1]s:%[1]s@%[3]s:5432/%[2]s",
+		user, database, pg.ip)
 }
 
 type PGEnvironment struct {
@@ -55,6 +64,7 @@ const pgAdminUser = "eltest"
 
 func (pg *Postgres) Database(
 	t T,
+	name string,
 	migrations fs.FS,
 	runMigrations bool,
 ) PGEnvironment {
@@ -66,9 +76,14 @@ func (pg *Postgres) Database(
 		pg.getPostgresURI(pgAdminUser, pgAdminUser))
 	Must(t, err, "open postgres admin connection")
 
-	defer adminConn.Close(ctx)
+	defer func() {
+		err := adminConn.Close(ctx)
+		Must(t, err, "close admin connection")
+	}()
 
-	sane := strings.ToLower(sanitizeExp.ReplaceAllString(t.Name(), "_"))
+	sane := strings.ToLower(sanitizeExp.ReplaceAllString(
+		t.Name()+"_"+name, "_"),
+	)
 
 	_, err = adminConn.Exec(ctx, fmt.Sprintf(`
 CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
@@ -90,7 +105,10 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	err = conn.Ping(ctx)
 	Must(t, err, "ping postgres user connection")
 
-	defer conn.Close(ctx)
+	defer func() {
+		err := conn.Close(ctx)
+		Must(t, err, "close user connection")
+	}()
 
 	if runMigrations {
 		m := env.Migrator(t, ctx, conn)
@@ -102,10 +120,10 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	return env
 }
 
-func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
+func (pg *Postgres) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "postgres",
-		Tag:        "15.2",
+		Tag:        pg.tag,
 		Env: []string{
 			"POSTGRES_USER=" + pgAdminUser,
 			"POSTGRES_PASSWORD=" + pgAdminUser,
@@ -113,6 +131,7 @@ func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
 		Cmd: []string{
 			"-c", "wal_level=logical",
 		},
+		NetworkID: network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true
 	})
@@ -121,6 +140,7 @@ func (pg *Postgres) SetUp(pool *dockertest.Pool) error {
 	}
 
 	pg.res = res
+	pg.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.

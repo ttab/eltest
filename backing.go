@@ -3,13 +3,15 @@ package eltest
 import (
 	"errors"
 	"fmt"
+	"net"
 	"sync"
 
 	"github.com/ory/dockertest/v3"
+	"github.com/ory/dockertest/v3/docker"
 )
 
 type BackingService interface {
-	SetUp(pool *dockertest.Pool) error
+	SetUp(pool *dockertest.Pool, network *dockertest.Network) error
 	Purge(pool *dockertest.Pool) error
 }
 
@@ -17,6 +19,7 @@ type T interface {
 	Name() string
 	Helper()
 	Fatalf(format string, args ...any)
+	Cleanup(fn func())
 }
 
 func Must(t T, err error, actionFormat string, a ...any) {
@@ -79,22 +82,93 @@ func createBackingServices() (*backingServices, error) {
 		services: make(map[string]BackingService),
 	}
 
+	for b.network == nil {
+		networks, err := b.pool.NetworksByName("eltest")
+		if err != nil {
+			return nil, fmt.Errorf("check for eltest network: %w", err)
+		}
+
+		if len(networks) > 0 {
+			network := networks[0]
+			b.network = &network
+
+			break
+		}
+
+		_, err = b.pool.CreateNetwork("eltest")
+		if err != nil {
+			return nil, fmt.Errorf("create eltest network: %w", err)
+		}
+	}
+
+	for _, c := range b.network.Network.IPAM.Config {
+		if c.Gateway == "" {
+			continue
+		}
+
+		b.gwIP = c.Gateway
+
+		break
+	}
+
 	return &b, nil
 }
 
 type backingServices struct {
-	pool *dockertest.Pool
+	pool    *dockertest.Pool
+	network *dockertest.Network
+	gwIP    string
 
 	srvMutex sync.Mutex
 	services map[string]BackingService
 }
 
-func Bootstrap[T BackingService](id string, srv T) (T, error) {
-	var zero T
+func GetNetwork() (*docker.Network, error) {
+	bs, err := getBackingServices()
+	if err != nil {
+		return nil, err
+	}
+
+	return bs.network.Network, nil
+}
+
+func GetGatewayIP() (net.IP, error) {
+	bs, err := getBackingServices()
+	if err != nil {
+		return nil, err
+	}
+
+	return net.ParseIP(bs.gwIP), nil
+}
+
+func Bootstrap[S BackingService](id string, srv S) (S, error) {
+	return BootstrapService(id, srv, nil)
+}
+
+func BootstrapService[S BackingService](id string, srv S, localTo T) (S, error) {
+	var zero S
 
 	bs, err := getBackingServices()
 	if err != nil {
 		return zero, err
+	}
+
+	// Containers that are local to a test are cleaned up with the test
+	// instead, don't add to bs.services.
+	if localTo != nil {
+		err = srv.SetUp(bs.pool, bs.network)
+		if err != nil {
+			return zero, fmt.Errorf("setup failed: %w", err)
+		}
+
+		localTo.Cleanup(func() {
+			err := srv.Purge(bs.pool)
+			if err != nil {
+				localTo.Fatalf("clean up service %s: %w", id, err)
+			}
+		})
+
+		return srv, nil
 	}
 
 	bs.srvMutex.Lock()
@@ -102,7 +176,7 @@ func Bootstrap[T BackingService](id string, srv T) (T, error) {
 
 	existing, ok := bs.services[id]
 	if ok {
-		s, ok := existing.(T)
+		s, ok := existing.(S)
 		if !ok {
 			return zero, fmt.Errorf("type mismatch, expected %T got %T",
 				srv, existing)
@@ -111,7 +185,7 @@ func Bootstrap[T BackingService](id string, srv T) (T, error) {
 		return s, nil
 	}
 
-	err = srv.SetUp(bs.pool)
+	err = srv.SetUp(bs.pool, bs.network)
 	if err != nil {
 		return zero, fmt.Errorf("setup failed: %w", err)
 	}
@@ -133,6 +207,8 @@ func (bs *backingServices) Purge() error {
 			errs = append(errs, fmt.Errorf("%s: %w", id, err))
 		}
 	}
+
+	bs.services = make(map[string]BackingService)
 
 	return errors.Join(errs...)
 }
