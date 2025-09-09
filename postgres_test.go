@@ -13,7 +13,7 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
-	pg := eltest.NewPostgres(t)
+	pg := eltest.NewPostgres(t, eltest.Postgres17_6)
 
 	migrationFS := os.DirFS(filepath.Join("testdata", "migrations"))
 
@@ -83,7 +83,7 @@ func TestPostgresConcurrent(t *testing.T) {
 		t.Run(fmt.Sprintf("N%d", i), func(t *testing.T) {
 			t.Parallel()
 
-			pg := eltest.NewPostgres(t)
+			pg := eltest.NewPostgres(t, eltest.Postgres17_6)
 
 			ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 			t.Cleanup(cancel)

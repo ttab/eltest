@@ -9,7 +9,7 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-const OpenSearch219 = "v2.19.3-1"
+const OpenSearch2_19 = "v2.19.3-1"
 
 func NewOpenSearch(t T, tag string) *OpenSearch {
 	os, err := Bootstrap("opensearch-"+tag, &OpenSearch{

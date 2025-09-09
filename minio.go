@@ -12,14 +12,20 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-func NewMinio(t T) *Minio {
-	m, err := Bootstrap("minio", &Minio{})
+const (
+	Minio202302 = "RELEASE.2023-02-22T18-23-45Z"
+	Minio202509 = "RELEASE.2025-09-07T16-13-09Z"
+)
+
+func NewMinio(t T, tag string) *Minio {
+	m, err := Bootstrap("minio-"+tag, &Minio{})
 	Must(t, err, "bootstrap minio")
 
 	return m
 }
 
 type Minio struct {
+	tag string
 	res *dockertest.Resource
 	ip  string
 }
@@ -82,7 +88,7 @@ func (m *Minio) CreateBucket(t T, ctx context.Context, prefix string) string {
 func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "minio/minio",
-		Tag:        "RELEASE.2023-02-22T18-23-45Z",
+		Tag:        m.tag,
 		Cmd:        []string{"server", "/data"},
 		NetworkID:  network.Network.ID,
 	}, func(hc *docker.HostConfig) {

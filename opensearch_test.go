@@ -3,13 +3,14 @@ package eltest_test
 import (
 	"encoding/json"
 	"net/http"
+	"strings"
 	"testing"
 
 	"github.com/ttab/eltest"
 )
 
 func TestOpenSearch(t *testing.T) {
-	svc := eltest.NewOpenSearch(t, "2.19.0")
+	svc := eltest.NewOpenSearch(t, eltest.OpenSearch2_19)
 
 	endpoint := svc.GetEndpoint()
 
@@ -42,8 +43,8 @@ func TestOpenSearch(t *testing.T) {
 			response.Version.Distribution)
 	}
 
-	if response.Version.Number != "2.19.0" {
-		t.Errorf(`expected version number to be "2.19.0", got %q`,
+	if !strings.HasPrefix(response.Version.Number, "2.19") {
+		t.Errorf(`expected version number to be "2.19.x", got %q`,
 			response.Version.Number)
 	}
 }

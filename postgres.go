@@ -14,14 +14,22 @@ import (
 	"github.com/ory/dockertest/v3/docker"
 )
 
-func NewPostgres(t T) *Postgres {
-	pg, err := Bootstrap("postgres", &Postgres{})
+const (
+	Postgres15_2 = "15.2"
+	Postgres17_6 = "17.6-alpine3.22"
+)
+
+func NewPostgres(t T, tag string) *Postgres {
+	pg, err := Bootstrap("postgres-"+tag, &Postgres{
+		tag: tag,
+	})
 	Must(t, err, "bootstrap postgres")
 
 	return pg
 }
 
 type Postgres struct {
+	tag string
 	res *dockertest.Resource
 	ip  string
 }
@@ -115,7 +123,7 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 func (pg *Postgres) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "postgres",
-		Tag:        "15.2",
+		Tag:        pg.tag,
 		Env: []string{
 			"POSTGRES_USER=" + pgAdminUser,
 			"POSTGRES_PASSWORD=" + pgAdminUser,
