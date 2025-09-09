@@ -6,7 +6,7 @@ import (
 	"github.com/ttab/eltest"
 )
 
-func TestGetNetworkAndGatewasy(t *testing.T) {
+func TestGetNetworkAndGateway(t *testing.T) {
 	network, err := eltest.GetNetwork()
 	eltest.Must(t, err, "get network")
 

@@ -82,21 +82,23 @@ func createBackingServices() (*backingServices, error) {
 		services: make(map[string]BackingService),
 	}
 
-	networks, err := b.pool.NetworksByName("eltest")
-	if err != nil {
-		return nil, fmt.Errorf("check for eltest network: %w", err)
-	}
+	for b.network == nil {
+		networks, err := b.pool.NetworksByName("eltest")
+		if err != nil {
+			return nil, fmt.Errorf("check for eltest network: %w", err)
+		}
 
-	if len(networks) > 0 {
-		network := networks[0]
-		b.network = &network
-	} else {
-		network, err := b.pool.CreateNetwork("eltest")
+		if len(networks) > 0 {
+			network := networks[0]
+			b.network = &network
+
+			break
+		}
+
+		_, err = b.pool.CreateNetwork("eltest")
 		if err != nil {
 			return nil, fmt.Errorf("create eltest network: %w", err)
 		}
-
-		b.network = network
 	}
 
 	for _, c := range b.network.Network.IPAM.Config {
