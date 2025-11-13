@@ -3,11 +3,9 @@ package eltest
 import (
 	"errors"
 	"fmt"
-	"net"
 	"sync"
 
 	"github.com/ory/dockertest/v3"
-	"github.com/ory/dockertest/v3/docker"
 )
 
 type BackingService interface {
@@ -101,44 +99,15 @@ func createBackingServices() (*backingServices, error) {
 		}
 	}
 
-	for _, c := range b.network.Network.IPAM.Config {
-		if c.Gateway == "" {
-			continue
-		}
-
-		b.gwIP = c.Gateway
-
-		break
-	}
-
 	return &b, nil
 }
 
 type backingServices struct {
 	pool    *dockertest.Pool
 	network *dockertest.Network
-	gwIP    string
 
 	srvMutex sync.Mutex
 	services map[string]BackingService
-}
-
-func GetNetwork() (*docker.Network, error) {
-	bs, err := getBackingServices()
-	if err != nil {
-		return nil, err
-	}
-
-	return bs.network.Network, nil
-}
-
-func GetGatewayIP() (net.IP, error) {
-	bs, err := getBackingServices()
-	if err != nil {
-		return nil, err
-	}
-
-	return net.ParseIP(bs.gwIP), nil
 }
 
 func Bootstrap[S BackingService](id string, srv S) (S, error) {
