@@ -4,12 +4,13 @@ import (
 	"fmt"
 	"log"
 	"net/http"
+	"strings"
 
 	"github.com/ory/dockertest/v3"
 	"github.com/ory/dockertest/v3/docker"
 )
 
-const OpenSearch2_19 = "v2.19.3-1"
+const OpenSearch2_19 = "v2.19.3-2"
 
 func NewOpenSearch(t T, tag string) *OpenSearch {
 	os, err := Bootstrap("opensearch-"+tag, &OpenSearch{
@@ -23,11 +24,16 @@ func NewOpenSearch(t T, tag string) *OpenSearch {
 type OpenSearch struct {
 	res *dockertest.Resource
 	tag string
-	ip  string
 }
 
 func (m *OpenSearch) GetEndpoint() string {
-	return fmt.Sprintf("http://%s:9200", m.ip)
+	return fmt.Sprintf("http://localhost:%s", m.res.GetPort("9200/tcp"))
+}
+
+func (m *OpenSearch) GetContainerEndpoint() string {
+	hostname := strings.TrimPrefix(m.res.Container.Name, "/")
+
+	return fmt.Sprintf("http://%s:9200", hostname)
 }
 
 func (m *OpenSearch) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
@@ -45,11 +51,10 @@ func (m *OpenSearch) SetUp(pool *dockertest.Pool, network *dockertest.Network) e
 		hc.AutoRemove = true
 	})
 	if err != nil {
-		return fmt.Errorf("failed to run minio container: %w", err)
+		return fmt.Errorf("failed to run opensearch container: %w", err)
 	}
 
 	m.res = res
-	m.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.
@@ -77,7 +82,7 @@ func (m *OpenSearch) SetUp(pool *dockertest.Pool, network *dockertest.Network) e
 		return nil
 	})
 	if err != nil {
-		return fmt.Errorf("failed to connect to minio: %w", err)
+		return fmt.Errorf("failed to connect to opensearch: %w", err)
 	}
 
 	return nil
@@ -91,7 +96,7 @@ func (m *OpenSearch) Purge(pool *dockertest.Pool) error {
 	err := pool.Purge(m.res)
 	if err != nil {
 		return fmt.Errorf(
-			"failed to purge minio container: %w", err)
+			"failed to purge opensearch container: %w", err)
 	}
 
 	return nil

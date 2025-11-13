@@ -31,19 +31,27 @@ func NewPostgres(t T, tag string) *Postgres {
 type Postgres struct {
 	tag string
 	res *dockertest.Resource
-	ip  string
 }
 
 func (pg *Postgres) getPostgresURI(user, database string) string {
 	return fmt.Sprintf(
+		"postgres://%[1]s:%[1]s@localhost:%[3]s/%[2]s",
+		user, database, pg.res.GetPort("5432/tcp"))
+}
+
+func (m *Postgres) getContainerPostgresURI(user, database string) string {
+	hostname := strings.TrimPrefix(m.res.Container.Name, "/")
+
+	return fmt.Sprintf(
 		"postgres://%[1]s:%[1]s@%[3]s:5432/%[2]s",
-		user, database, pg.ip)
+		user, database, hostname)
 }
 
 type PGEnvironment struct {
 	migrations fs.FS
 
-	PostgresURI string
+	PostgresURI          string
+	ContainerPostgresURI string
 }
 
 var sanitizeExp = regexp.MustCompile(`[^a-zA-Z0-9]+`)
@@ -95,8 +103,9 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	Must(t, err, "create database")
 
 	env := PGEnvironment{
-		migrations:  migrations,
-		PostgresURI: pg.getPostgresURI(sane, sane),
+		migrations:           migrations,
+		PostgresURI:          pg.getPostgresURI(sane, sane),
+		ContainerPostgresURI: pg.getContainerPostgresURI(sane, sane),
 	}
 
 	conn, err := pgx.Connect(ctx, env.PostgresURI)
@@ -140,7 +149,6 @@ func (pg *Postgres) SetUp(pool *dockertest.Pool, network *dockertest.Network) er
 	}
 
 	pg.res = res
-	pg.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.
