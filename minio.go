@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 	"log"
+	"math/rand/v2"
+	"strconv"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -27,7 +29,6 @@ func NewMinio(t T, tag string) *Minio {
 type Minio struct {
 	tag string
 	res *dockertest.Resource
-	ip  string
 }
 
 const (
@@ -36,13 +37,20 @@ const (
 )
 
 func (m *Minio) getS3Endpoint() string {
-	return fmt.Sprintf("%s:9000", m.ip)
+	return fmt.Sprintf("localhost:%s", m.res.GetPort("9000/tcp"))
+}
+
+func (m *Minio) getContainerS3Endpoint() string {
+	hostname := strings.TrimPrefix(m.res.Container.Name, "/")
+
+	return fmt.Sprintf("%s:9000", hostname)
 }
 
 type MinioEnvironment struct {
-	Endpoint string
-	ID       string
-	Secret   string
+	Endpoint          string
+	ContainerEndpoint string
+	ID                string
+	Secret            string
 }
 
 func (m *Minio) Client() (*minio.Client, error) {
@@ -64,9 +72,10 @@ func (m *Minio) Client() (*minio.Client, error) {
 
 func (m *Minio) Environment() MinioEnvironment {
 	return MinioEnvironment{
-		Endpoint: m.getS3Endpoint(),
-		ID:       minioID,
-		Secret:   minioSecret,
+		Endpoint:          m.getS3Endpoint(),
+		ContainerEndpoint: m.getContainerS3Endpoint(),
+		ID:                minioID,
+		Secret:            minioSecret,
 	}
 }
 
@@ -86,10 +95,13 @@ func (m *Minio) CreateBucket(t T, ctx context.Context, prefix string) string {
 }
 
 func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
+	name := "minio-" + strconv.Itoa(rand.Int())
+
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "minio/minio",
 		Tag:        m.tag,
 		Cmd:        []string{"server", "/data"},
+		Name:       name,
 		NetworkID:  network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true
@@ -99,7 +111,6 @@ func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error 
 	}
 
 	m.res = res
-	m.ip = res.GetIPInNetwork(network)
 
 	// Make sure that containers don't stick around for more than an hour,
 	// even if in-process cleanup fails.
