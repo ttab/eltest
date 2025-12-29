@@ -3,7 +3,7 @@ module github.com/ttab/eltest
 go 1.25.4
 
 require (
-	github.com/jackc/pgx/v5 v5.7.6
+	github.com/jackc/pgx/v5 v5.8.0
 	github.com/jackc/tern/v2 v2.3.3
 	github.com/minio/minio-go/v7 v7.0.97
 	github.com/ory/dockertest/v3 v3.12.0
