@@ -15,6 +15,8 @@ import (
 )
 
 const (
+	MinioRepo = "ghcr.io/ttab/elephant-images/minio"
+
 	Minio202302 = "RELEASE.2023-02-22T18-23-45Z"
 	Minio202509 = "RELEASE.2025-09-07T16-13-09Z"
 )
@@ -98,7 +100,7 @@ func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error 
 	name := "minio-" + strconv.Itoa(rand.Int())
 
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "minio/minio",
+		Repository: MinioRepo,
 		Tag:        m.tag,
 		Cmd:        []string{"server", "/data"},
 		Name:       name,

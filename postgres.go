@@ -15,6 +15,8 @@ import (
 )
 
 const (
+	PostgresRepo = "ghcr.io/ttab/elephant-images/postgres"
+
 	Postgres15_2 = "15.2"
 	Postgres17_6 = "17.6-alpine3.22"
 )
@@ -131,7 +133,7 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 
 func (pg *Postgres) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
-		Repository: "postgres",
+		Repository: PostgresRepo,
 		Tag:        pg.tag,
 		Env: []string{
 			"POSTGRES_USER=" + pgAdminUser,
