@@ -4,8 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log"
-	"math/rand/v2"
-	"strconv"
 	"strings"
 
 	"github.com/minio/minio-go/v7"
@@ -80,7 +78,7 @@ func (m *Minio) Environment() MinioEnvironment {
 }
 
 // CreateBucket with the given prefix and a suffix based on the test name.
-func (m *Minio) CreateBucket(t T, ctx context.Context, prefix string) string {
+func (m *Minio) CreateBucket(ctx context.Context, t T, prefix string) string {
 	client, err := m.Client()
 	Must(t, err, "create client")
 
@@ -95,13 +93,10 @@ func (m *Minio) CreateBucket(t T, ctx context.Context, prefix string) string {
 }
 
 func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
-	name := "minio-" + strconv.Itoa(rand.Int())
-
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "minio/minio",
 		Tag:        m.tag,
 		Cmd:        []string{"server", "/data"},
-		Name:       name,
 		NetworkID:  network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true

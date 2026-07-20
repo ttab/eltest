@@ -63,7 +63,9 @@ func (m *OpenSearch) SetUp(pool *dockertest.Pool, network *dockertest.Network) e
 	endpoint := m.GetEndpoint()
 
 	err = pool.Retry(func() error {
-		res, err := http.Get(endpoint)
+		// G107: endpoint is a locally constructed localhost URL for the
+		// test container, not attacker-controlled input.
+		res, err := http.Get(endpoint) //nolint:gosec
 		if err != nil {
 			log.Println(err.Error())
 

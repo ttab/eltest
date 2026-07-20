@@ -20,9 +20,9 @@ func TestMinio(t *testing.T) {
 	client, err := minioSvc.Client()
 	eltest.Must(t, err, "get minio client")
 
-	bucket := minioSvc.CreateBucket(t, ctx, "some-bucket")
+	bucket := minioSvc.CreateBucket(ctx, t, "some-bucket")
 
-	data := "world"
+	data := testValue
 
 	_, err = client.PutObject(ctx, bucket, "hello.txt",
 		strings.NewReader(data),

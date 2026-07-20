@@ -39,8 +39,8 @@ func (pg *Postgres) getPostgresURI(user, database string) string {
 		user, database, pg.res.GetPort("5432/tcp"))
 }
 
-func (m *Postgres) getContainerPostgresURI(user, database string) string {
-	hostname := strings.TrimPrefix(m.res.Container.Name, "/")
+func (pg *Postgres) getContainerPostgresURI(user, database string) string {
+	hostname := strings.TrimPrefix(pg.res.Container.Name, "/")
 
 	return fmt.Sprintf(
 		"postgres://%[1]s:%[1]s@%[3]s:5432/%[2]s",
@@ -56,7 +56,7 @@ type PGEnvironment struct {
 
 var sanitizeExp = regexp.MustCompile(`[^a-zA-Z0-9]+`)
 
-func (env *PGEnvironment) Migrator(t T, ctx context.Context, conn *pgx.Conn) *migrate.Migrator {
+func (env *PGEnvironment) Migrator(ctx context.Context, t T, conn *pgx.Conn) *migrate.Migrator {
 	t.Helper()
 
 	m, err := migrate.NewMigrator(ctx, conn, "schema_vesion")
@@ -120,7 +120,7 @@ CREATE ROLE %q WITH LOGIN PASSWORD '%s' REPLICATION`,
 	}()
 
 	if runMigrations {
-		m := env.Migrator(t, ctx, conn)
+		m := env.Migrator(ctx, t, conn)
 
 		err = m.Migrate(ctx)
 		Must(t, err, "migrate to current DB schema")

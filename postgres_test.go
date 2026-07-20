@@ -38,8 +38,8 @@ func TestPostgres(t *testing.T) {
 		err = row.Scan(&desc)
 		eltest.Must(t, err, "read description from db")
 
-		if desc != "world" {
-			t.Fatalf("got %q back, expected %q", desc, "world")
+		if desc != testValue {
+			t.Fatalf("got %q back, expected %q", desc, testValue)
 		}
 	})
 
@@ -52,7 +52,7 @@ func TestPostgres(t *testing.T) {
 		conn, err := pgx.Connect(ctx, pgEnv.PostgresURI)
 		eltest.Must(t, err, "connect to database")
 
-		migrator := pgEnv.Migrator(t, ctx, conn)
+		migrator := pgEnv.Migrator(ctx, t, conn)
 
 		err = migrator.MigrateTo(ctx, 1)
 		eltest.Must(t, err, "migrate to schema v1")

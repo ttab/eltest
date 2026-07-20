@@ -8,6 +8,9 @@ import (
 	"github.com/ttab/eltest"
 )
 
+// testValue is the payload stored and read back in the round-trip tests.
+const testValue = "world"
+
 func TestMain(m *testing.M) {
 	code := m.Run()
 

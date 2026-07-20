@@ -16,18 +16,19 @@ func TestValkey(t *testing.T) {
 	t.Cleanup(cancel)
 
 	client := v.Client()
+
 	t.Cleanup(func() {
 		_ = client.Close()
 	})
 
-	err := client.Set(ctx, "hello", "world", 0).Err()
+	err := client.Set(ctx, "hello", testValue, 0).Err()
 	eltest.Must(t, err, "set key")
 
 	got, err := client.Get(ctx, "hello").Result()
 	eltest.Must(t, err, "get key")
 
-	if got != "world" {
-		t.Fatalf("got %q back, expected %q", got, "world")
+	if got != testValue {
+		t.Fatalf("got %q back, expected %q", got, testValue)
 	}
 
 	// Streams round-trip: collab's primary use of valkey is XADD/XREAD,
@@ -44,9 +45,11 @@ func TestValkey(t *testing.T) {
 	if len(entries) != 1 {
 		t.Fatalf("XRange returned %d entries, want 1", len(entries))
 	}
+
 	if entries[0].ID != streamID {
 		t.Errorf("entry ID = %q, want %q", entries[0].ID, streamID)
 	}
+
 	if entries[0].Values["data"] != "first" {
 		t.Errorf("entry data = %v, want %q", entries[0].Values["data"], "first")
 	}
