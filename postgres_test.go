@@ -13,7 +13,22 @@ import (
 )
 
 func TestPostgres(t *testing.T) {
-	pg := eltest.NewPostgres(t, eltest.Postgres17_6)
+	versions := []string{
+		eltest.Postgres17_6,
+		eltest.Postgres18_6,
+	}
+
+	for _, tag := range versions {
+		t.Run(tag, func(t *testing.T) {
+			testPostgresVersion(t, tag)
+		})
+	}
+}
+
+func testPostgresVersion(t *testing.T, tag string) {
+	t.Helper()
+
+	pg := eltest.NewPostgres(t, tag)
 
 	migrationFS := os.DirFS(filepath.Join("testdata", "migrations"))
 

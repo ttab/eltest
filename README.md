@@ -2,7 +2,7 @@
 
 Support library for writing elephant tests.
 
-Takes care of setting up Postgres and Minio containers for intergration tests. See tests for usage, and don't miss setting up `TestMain()` in your own service:
+Takes care of setting up Postgres, Minio, OpenSearch and Valkey containers for integration tests. See tests for usage, and don't miss setting up `TestMain()` in your own service:
 
 ``` go
 func TestMain(m *testing.M) {
@@ -15,4 +15,11 @@ func TestMain(m *testing.M) {
 
 	os.Exit(code)
 }
+```
+
+The Postgres version is chosen with one of the exported tag constants, so a
+service moves between major versions by changing the constant it passes:
+
+``` go
+pg := eltest.NewPostgres(t, eltest.Postgres18_6)
 ```

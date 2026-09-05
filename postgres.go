@@ -17,6 +17,7 @@ import (
 const (
 	Postgres15_2 = "15.2"
 	Postgres17_6 = "17.6-alpine3.22"
+	Postgres18_6 = "18.6-alpine3.24"
 )
 
 func NewPostgres(t T, tag string) *Postgres {
