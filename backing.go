@@ -133,7 +133,7 @@ func BootstrapService[S BackingService](id string, srv S, localTo T) (S, error) 
 		localTo.Cleanup(func() {
 			err := srv.Purge(bs.pool)
 			if err != nil {
-				localTo.Fatalf("clean up service %s: %w", id, err)
+				localTo.Fatalf("clean up service %s: %v", id, err)
 			}
 		})
 

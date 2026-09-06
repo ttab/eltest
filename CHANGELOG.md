@@ -4,6 +4,21 @@ Everything from v0.4.0 onwards is documented here; earlier releases are not
 reconstructed. The entries are derived from the release tags, and the linked
 pull requests hold the detail.
 
+## [v0.4.1] - 2026-09-06
+
+**Behaviour change (minio image):** `NewMinio` now runs the tag it is given. It
+never stored the tag on the container options, so every minio container was
+started from `minio/minio:latest` no matter whether `Minio202302` or
+`Minio202509` was passed — the constant only kept the containers apart in the
+bootstrap map. A suite pinned to an older release has in fact been testing
+against whatever `latest` pointed at that day, and will now get the release it
+asked for. `NewPostgres`, `NewOpenSearch` and `NewValkey` were unaffected.
+
+Changes:
+
+- A failure to clean up a test-local backing service now reports the underlying
+  error instead of printing `%!w(...)`.
+
 ## [v0.4.0] - 2026-09-05
 
 **Breaking (toolchain):** the module declares Go 1.26.8, so a consumer still
