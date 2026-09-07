@@ -2,6 +2,8 @@ package eltest
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"strings"
@@ -95,10 +97,29 @@ func (m *Minio) CreateBucket(ctx context.Context, t T, prefix string) string {
 }
 
 func (m *Minio) SetUp(pool *dockertest.Pool, network *dockertest.Network) error {
+	// Name the container ourselves. The container name is the hostname
+	// other containers reach minio on, and docker's generated names are
+	// "adjective_surname" -- minio refuses a request whose Host contains
+	// an underscore with "400 InvalidRequest: Invalid Request (invalid
+	// hostname)", so an unnamed container breaks every container-to-minio
+	// caller while the in-process client on localhost keeps working.
+	//
+	// crypto/rand rather than math/rand only because gosec objects to the
+	// latter; nothing here needs an unpredictable name, just a unique one.
+	var suffix [8]byte
+
+	_, err := rand.Read(suffix[:])
+	if err != nil {
+		return fmt.Errorf("generate container name: %w", err)
+	}
+
+	name := "minio-" + hex.EncodeToString(suffix[:])
+
 	res, err := pool.RunWithOptions(&dockertest.RunOptions{
 		Repository: "minio/minio",
 		Tag:        m.tag,
 		Cmd:        []string{"server", "/data"},
+		Name:       name,
 		NetworkID:  network.Network.ID,
 	}, func(hc *docker.HostConfig) {
 		hc.AutoRemove = true

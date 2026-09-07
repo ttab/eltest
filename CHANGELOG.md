@@ -4,6 +4,19 @@ Everything from v0.4.0 onwards is documented here; earlier releases are not
 reconstructed. The entries are derived from the release tags, and the linked
 pull requests hold the detail.
 
+## [v0.4.2] - 2026-09-07
+
+**Bug fix (container-to-minio S3 access):** the minio container is named again,
+so other containers can reach it. `SetUp` stopped passing a `Name` in v0.3.0,
+which left docker to generate one of its `adjective_surname` names —
+and `Environment().ContainerEndpoint` hands that name out as the hostname other
+containers use. minio refuses a request whose `Host` contains an underscore
+with `400 InvalidRequest: Invalid Request (invalid hostname)`, so every
+container-to-minio caller has been failing since v0.3.0 while the in-process
+client, which goes to `localhost`, kept working. A suite that starts a service
+container against minio saw it fail its own S3 health check rather than
+anything pointing here. The container is now named `minio-<random hex>`.
+
 ## [v0.4.1] - 2026-09-06
 
 **Behaviour change (minio image):** `NewMinio` now runs the tag it is given. It
